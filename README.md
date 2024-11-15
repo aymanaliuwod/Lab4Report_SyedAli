@@ -1,4 +1,4 @@
-//Question 1
+--Question 1--
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -123,109 +123,117 @@ int main() {
 }
 
 
-//Question 2
+--Question 2-- 
 
 #include <stdio.h>
 
-#define INITIAL_BALANCE 1000
-#define MAX_TRANSACTIONS 10
+#define STARTING_BALANCE 1000
+#define MAX_OPS 10
 
-int main()
-{
-    int balance = INITIAL_BALANCE;
-    int transactions[MAX_TRANSACTIONS] = {200, -150, -500, -400, -50, -200, 300};
-    int tobeprocessed[MAX_TRANSACTIONS];
-    int tobeprocessed_count = 0;
+int main() {
+    int current_balance = STARTING_BALANCE;
+    int operations[MAX_OPS] = {200, -150, -500, -400, -50, -200, 300};
+    int pending_ops[MAX_OPS];
+    int pending_count = 0;
 
-    printf("Starting balance: %d AED\n", balance);
+    printf("Initial balance: %d AED\n", current_balance);
 
-    for (int i = 0; i < MAX_TRANSACTIONS; i++) {
-        if (transactions[i] == 0) break;
+    // Process each transaction
+    for (int index = 0; index < MAX_OPS; index++) {
+        if (operations[index] == 0) {
+            break; 
+        }
 
-        int transaction = transactions[i];
+        int op = operations[index];
 
-        if (transaction < 0 && balance + transaction < 0) {
-            printf("Skipped withdrawal of %d AED: Insufficient funds.\n", -transaction);
-            tobeprocessed[tobeprocessed_count++] = transaction;
+        
+        if (op < 0 && current_balance + op < 0) {
+            printf("Withdrawal of %d AED skipped: Insufficient funds.\n", -op);
+            pending_ops[pending_count++] = op;
         } else {
-            balance += transaction;
-            printf("Processed transaction: %d AED, New balance: %d AED\n", transaction, balance);
+            
+            current_balance += op;
+            printf("Transaction processed: %d AED, New balance: %d AED\n", op, current_balance);
 
-            if (balance == 0) {
-                printf("Balance reached zero. Stopping further transactions.\n");
-                for (int j = i + 1; j < MAX_TRANSACTIONS; j++) {
-                    if (transactions[j] == 0) break;
-                    tobeprocessed[tobeprocessed_count++] = transactions[j];
+            if (current_balance == 0) {
+                printf("Balance is now zero. Halting further transactions.\n");
+
+                // Mark remaining transactions as pending
+                for (int remaining = index + 1; remaining < MAX_OPS; remaining++) {
+                    if (operations[remaining] == 0) {
+                        break;
+                    }
+                    pending_ops[pending_count++] = operations[remaining];
                 }
                 break;
             }
         }
     }
 
-    printf("\nFinal balance: %d AED\n", balance);
-    printf("Transactions to be processed later:\n");
-    for (int i = 0; i < tobeprocessed_count; i++) {
-        printf("%d ", tobeprocessed[i]);
+    // Final summary
+    printf("\nFinal balance: %d AED\n", current_balance);
+    printf("Pending transactions to process later:\n");
+    for (int i = 0; i < pending_count; i++) {
+        printf("%d ", pending_ops[i]);
     }
     printf("\n");
 
     return 0;
 }
 
-//Question 3
-
+--Question 3--
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 
-#define NUM_TEAMS 20
-#define SQUAD_SIZE 53
+#define MAX_TEAMS 20
+#define MAX_PLAYERS 53
 
 typedef struct {
     int day;
     int month;
     int year;
-} Date;
+} BirthDate;
 
 typedef struct {
     char name[26];
     int kitNumber;
     char club[30];
-    Date birthDate;
+    BirthDate birthDate;
     char position[20];
-} Player;
+} FootballPlayer;
 
 typedef struct {
     char teamName[21];
-    Player players[SQUAD_SIZE];
-    int activeSize;
-} Team;
+    FootballPlayer squad[MAX_PLAYERS];
+    int currentSize;
+} FootballTeam;
 
-Team league[NUM_TEAMS];
-int enrolledTeams = 0;
+FootballTeam league[MAX_TEAMS];
+int totalTeams = 0;
 
-void display_menu() {
+void show_menu() {
     printf("\nMenu:\n");
-    printf("1. Enroll Club\n");
-    printf("2. Add Player\n");
-    printf("3. Search and Update Player\n");
-    printf("4. Display Club Statistics\n");
+    printf("1. Register Club\n");
+    printf("2. Add New Player\n");
+    printf("3. Find and Modify Player\n");
+    printf("4. View Club Statistics\n");
     printf("0. Exit\n");
 }
 
-void enroll_club() {
-    if (enrolledTeams >= NUM_TEAMS) {
-        printf("Maximum number of teams reached.\n");
+void register_club() {
+    if (totalTeams >= MAX_TEAMS) {
+        printf("Cannot enroll more teams, limit reached.\n");
         return;
     }
     printf("Enter club name: ");
-    scanf(" %[^\n]", league[enrolledTeams].teamName);
-    league[enrolledTeams].activeSize = 0;
-    enrolledTeams++;
-    printf("Club enrolled successfully.\n");
+    scanf(" %[^\n]", league[totalTeams].teamName);
+    league[totalTeams].currentSize = 0;
+    totalTeams++;
+    printf("Club registered successfully.\n");
 }
 
-bool is_duplicate(Player players[], int count, char name[], int kitNumber) {
+bool check_duplicate(FootballPlayer players[], int count, char name[], int kitNumber) {
     for (int i = 0; i < count; i++) {
         if (strcmp(players[i].name, name) == 0 || players[i].kitNumber == kitNumber) {
             return true;
@@ -234,28 +242,28 @@ bool is_duplicate(Player players[], int count, char name[], int kitNumber) {
     return false;
 }
 
-void add_player() {
-    if (enrolledTeams == 0) {
-        printf("No clubs available. Enroll a club first.\n");
+void add_new_player() {
+    if (totalTeams == 0) {
+        printf("No clubs available. Please register a club first.\n");
         return;
     }
 
-    printf("Select a club by number:\n");
-    for (int i = 0; i < enrolledTeams; i++) {
+    printf("Select a club:\n");
+    for (int i = 0; i < totalTeams; i++) {
         printf("%d. %s\n", i + 1, league[i].teamName);
     }
 
-    int teamIndex;
-    scanf("%d", &teamIndex);
-    teamIndex--;
+    int clubIndex;
+    scanf("%d", &clubIndex);
+    clubIndex--;
 
-    if (teamIndex < 0 || teamIndex >= enrolledTeams || league[teamIndex].activeSize >= SQUAD_SIZE) {
-        printf("Invalid selection or team is full.\n");
+    if (clubIndex < 0 || clubIndex >= totalTeams || league[clubIndex].currentSize >= MAX_PLAYERS) {
+        printf("Invalid club or squad full.\n");
         return;
     }
 
-    Player newPlayer;
-    printf("Enter player name: ");
+    FootballPlayer newPlayer;
+    printf("Enter player's name: ");
     scanf(" %[^\n]", newPlayer.name);
     printf("Enter unique kit number (1-99): ");
     scanf("%d", &newPlayer.kitNumber);
@@ -263,74 +271,73 @@ void add_player() {
     scanf("%d %d %d", &newPlayer.birthDate.day, &newPlayer.birthDate.month, &newPlayer.birthDate.year);
     printf("Enter position: ");
     scanf(" %[^\n]", newPlayer.position);
-    strcpy(newPlayer.club, league[teamIndex].teamName);
+    strcpy(newPlayer.club, league[clubIndex].teamName);
 
-    if (is_duplicate(league[teamIndex].players, league[teamIndex].activeSize, newPlayer.name, newPlayer.kitNumber)) {
-        printf("Duplicate player name or kit number. Player not added.\n");
+    if (check_duplicate(league[clubIndex].squad, league[clubIndex].currentSize, newPlayer.name, newPlayer.kitNumber)) {
+        printf("Duplicate player or kit number. Cannot add player.\n");
     } else {
-        league[teamIndex].players[league[teamIndex].activeSize] = newPlayer;
-        league[teamIndex].activeSize++;
+        league[clubIndex].squad[league[clubIndex].currentSize] = newPlayer;
+        league[clubIndex].currentSize++;
         printf("Player added successfully.\n");
     }
 }
 
-void search_update() {
-    char searchName[26];
-    int kitNumber, choice;
+void find_and_modify_player() {
+    char playerName[26];
+    int playerKitNumber, choice;
     printf("Search by 1. Name or 2. Kit Number? ");
     scanf("%d", &choice);
 
     if (choice == 1) {
-        printf("Enter player name: ");
-        scanf(" %[^\n]", searchName);
+        printf("Enter player's name: ");
+        scanf(" %[^\n]", playerName);
     } else if (choice == 2) {
         printf("Enter kit number: ");
-        scanf("%d", &kitNumber);
+        scanf("%d", &playerKitNumber);
     } else {
-        printf("Invalid choice.\n");
+        printf("Invalid option.\n");
         return;
     }
 
     bool found = false;
-    for (int i = 0; i < enrolledTeams; i++) {
-        for (int j = 0; j < league[i].activeSize; j++) {
-
-            if ((choice == 1 && strcasecmp(league[i].players[j].name, searchName) == 0) ||
-                (choice == 2 && league[i].players[j].kitNumber == kitNumber)) {
+    for (int i = 0; i < totalTeams; i++) {
+        for (int j = 0; j < league[i].currentSize; j++) {
+            if ((choice == 1 && strcasecmp(league[i].squad[j].name, playerName) == 0) ||
+                (choice == 2 && league[i].squad[j].kitNumber == playerKitNumber)) {
                 printf("Player found:\n");
                 printf("  Name: %s\n  Kit Number: %d\n  Club: %s\n  Birth Date: %02d-%02d-%04d\n  Position: %s\n",
-                       league[i].players[j].name, league[i].players[j].kitNumber, league[i].players[j].club,
-                       league[i].players[j].birthDate.day, league[i].players[j].birthDate.month, league[i].players[j].birthDate.year,
-                       league[i].players[j].position);
+                       league[i].squad[j].name, league[i].squad[j].kitNumber, league[i].squad[j].club,
+                       league[i].squad[j].birthDate.day, league[i].squad[j].birthDate.month, league[i].squad[j].birthDate.year,
+                       league[i].squad[j].position);
 
-                printf("Update player details (leave blank to keep current value):\n");
+                printf("Modify player details (leave blank to keep current value):\n");
 
-                printf("Enter new name [%s]: ", league[i].players[j].name);
+                printf("New name [%s]: ", league[i].squad[j].name);
                 char newName[26];
                 scanf(" %[^\n]", newName);
                 if (strlen(newName) > 0) {
-                    strcpy(league[i].players[j].name, newName);
+                    strcpy(league[i].squad[j].name, newName);
                 }
 
-                printf("Enter new kit number [%d]: ", league[i].players[j].kitNumber);
+                printf("New kit number [%d]: ", league[i].squad[j].kitNumber);
                 int newKitNumber;
                 if (scanf("%d", &newKitNumber) == 1) {
-                    league[i].players[j].kitNumber = newKitNumber;
+                    league[i].squad[j].kitNumber = newKitNumber;
                 }
 
-                printf("Enter new birth date (day month year) [%02d-%02d-%04d]: ", league[i].players[j].birthDate.day, league[i].players[j].birthDate.month, league[i].players[j].birthDate.year);
+                printf("New birth date (day month year) [%02d-%02d-%04d]: ", league[i].squad[j].birthDate.day, league[i].squad[j].birthDate.month, league[i].squad[j].birthDate.year);
                 int newDay, newMonth, newYear;
                 if (scanf("%d %d %d", &newDay, &newMonth, &newYear) == 3) {
-                    league[i].players[j].birthDate.day = newDay;
-                    league[i].players[j].birthDate.month = newMonth;
-                    league[i].players[j].birthDate.year = newYear;
+                    league[i].squad[j].birthDate.day = newDay;
+                    league[i].squad[j].birthDate.month = newMonth;
+                    league[i].squad[j].birthDate.year = newYear;
                 }
 
-                printf("Enter new position [%s]: ", league[i].players[j].position);
+                printf("New position [%s]: ", league[i].squad[j].position);
                 char newPosition[20];
                 scanf(" %[^\n]", newPosition);
                 if (strlen(newPosition) > 0) {
-                    strcpy(league[i].players[j].position, newPosition);
+                    strcpy(league[i].squad[j].position, newPosition);
                 }
 
                 printf("Player details updated successfully.\n");
@@ -346,45 +353,44 @@ void search_update() {
     }
 }
 
-
-void display_club_statistics() {
-    for (int i = 0; i < enrolledTeams; i++) {
-        printf("Club: %s, Players: %d\n", league[i].teamName, league[i].activeSize);
-        int ageSum = 0;
-        for (int j = 0; j < league[i].activeSize; j++) {
-            int age = 2024 - league[i].players[j].birthDate.year;
-            ageSum += age;
-            printf("  Name: %s, Kit: %d, Position: %s, Age: %d\n", league[i].players[j].name, league[i].players[j].kitNumber, league[i].players[j].position, age);
+void view_club_statistics() {
+    for (int i = 0; i < totalTeams; i++) {
+        printf("Club: %s, Players: %d\n", league[i].teamName, league[i].currentSize);
+        int totalAge = 0;
+        for (int j = 0; j < league[i].currentSize; j++) {
+            int age = 2024 - league[i].squad[j].birthDate.year;
+            totalAge += age;
+            printf("  Name: %s, Kit: %d, Position: %s, Age: %d\n", league[i].squad[j].name, league[i].squad[j].kitNumber, league[i].squad[j].position, age);
         }
-        printf("Average Age: %.2f\n", league[i].activeSize ? (float)ageSum / league[i].activeSize : 0.0);
+        printf("Average Age: %.2f\n", league[i].currentSize ? (float)totalAge / league[i].currentSize : 0.0);
     }
 }
 
 int main() {
     int choice;
     do {
-        display_menu();
+        show_menu();
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
             case 1:
-                enroll_club();
+                register_club();
                 break;
             case 2:
-                add_player();
+                add_new_player();
                 break;
             case 3:
-                search_update();
+                find_and_modify_player();
                 break;
             case 4:
-                display_club_statistics();
+                view_club_statistics();
                 break;
             case 0:
                 printf("Exiting program.\n");
                 break;
             default:
-                printf("Invalid choice. Try again.\n");
+                printf("Invalid choice. Please try again.\n");
         }
     } while (choice != 0);
 
