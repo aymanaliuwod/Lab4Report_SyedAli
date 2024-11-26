@@ -1,398 +1,283 @@
---Question 1--
-
+-- Question 1 --
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include <ctype.h>
 
-#define SIZE 10
-
-bool isValid(const int arr[], int length, int pos) {
-    return (pos >= 0 && pos < length);
-}
-
-void remove_element(int arr[], int length, int pos) {
-    if (!isValid(arr, length, pos)) {
-        printf("Error: Index %d is out of range.\n", pos);
-        return;
-    }
-    for (int i = pos; i < length - 1; i++) {
-        arr[i] = arr[i + 1];
-    }
-    arr[length - 1] = 0;
-}
-
-void insert_element(int arr[], int length, int pos, int value) {
-    if (!isValid(arr, length, pos)) {
-        printf("Error: Index %d is out of range.\n", pos);
-        return;
-    }
-    for (int i = length - 1; i > pos; i--) {
-        arr[i] = arr[i - 1];
-    }
-    arr[pos] = value;
-}
-
-void reshape(const int arr[], int length, int nRows, int nCols, int arr2d[nRows][nCols]) {
-    if (length != nRows * nCols) {
-        printf("Error: Array size does not match matrix dimensions.\n");
-        return;
-    }
-    int k = 0;
-    for (int j = 0; j < nCols; j++) {
-        for (int i = 0; i < nRows; i++) {
-            arr2d[i][j] = arr[k++];
-        }
-    }
-}
-
-void trans_matrix(int nRows, int nCols, const int mat[nRows][nCols], int mat_transp[nCols][nRows]) {
-    for (int i = 0; i < nRows; i++) {
-        for (int j = 0; j < nCols; j++) {
-            mat_transp[j][i] = mat[i][j];
-        }
-    }
-}
-
-bool found_duplicate(int arr[], int length) {
-    for (int i = 0; i < length - 1; i++) {
-        for (int j = i + 1; j < length; j++) {
-            if (arr[i] == arr[j]) {
-                return true;
-            }
-        }
-    }
-    return false;
+// Function to check if a string can be converted to a float
+int is_valid_float(const char *str) {
+    char *endptr;
+    strtod(str, &endptr); // Convert string to double
+    return (*endptr == '\0' || isspace(*endptr)); // Valid if endptr points to null or whitespace
 }
 
 int main() {
-    int arr[SIZE] = {10, 20, 30, 40, 50, 0, 0, 0, 0, 0};
-    int arr2d[2][5];
-    int transposed[5][2];
+    FILE *inputFile, *outputFile;
+    char inputFileName[] = "data.txt";  // Input file name
+    char outputFileName[] = "valid_data.txt"; // Output file name
+    char buffer[100];
+    int invalidCount = 0;
 
-    printf("Testing isValid:\n");
-    printf("Position 2 is %s\n", isValid(arr, SIZE, 2) ? "valid" : "invalid");
-    printf("Position 10 is %s\n", isValid(arr, SIZE, 10) ? "valid" : "invalid");
-
-    printf("\nTesting remove_element:\n");
-    printf("Array before removing element at position 2:\n");
-    for (int i = 0; i < SIZE; i++) printf("%d ", arr[i]);
-    printf("\n");
-
-    remove_element(arr, SIZE, 2);
-    printf("Array after removing element at position 2:\n");
-    for (int i = 0; i < SIZE; i++) printf("%d ", arr[i]);
-    printf("\n");
-
-    int arr_reset[SIZE] = {10, 20, 30, 40, 50, 0, 0, 0, 0, 0};
-    for (int i = 0; i < SIZE; i++) arr[i] = arr_reset[i];
-
-    printf("\nTesting insert_element:\n");
-    printf("Array before inserting 80 at position 2:\n");
-    for (int i = 0; i < SIZE; i++) printf("%d ", arr[i]);
-    printf("\n");
-
-    insert_element(arr, SIZE, 2, 80);
-    printf("Array after inserting 80 at position 2:\n");
-    for (int i = 0; i < SIZE; i++) printf("%d ", arr[i]);
-    printf("\n");
-
-    printf("\nTesting reshape:\n");
-    reshape(arr, 10, 2, 5, arr2d);
-    printf("Reshaped 2D array:\n");
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 5; j++) {
-            printf("%d ", arr2d[i][j]);
-        }
-        printf("\n");
+    // Open the input file
+    inputFile = fopen(inputFileName, "r");
+    if (inputFile == NULL) {
+        perror("Error opening source file");
+        return EXIT_FAILURE;
     }
 
-    printf("\nTesting trans_matrix:\n");
-    trans_matrix(2, 5, arr2d, transposed);
-    printf("Transposed 2D array:\n");
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 2; j++) {
-            printf("%d ", transposed[i][j]);
-        }
-        printf("\n");
+    // Open the output file
+    outputFile = fopen(outputFileName, "w");
+    if (outputFile == NULL) {
+        perror("Error opening output file");
+        fclose(inputFile);
+        return EXIT_FAILURE;
     }
 
-    printf("\nTesting found_duplicate:\n");
-    bool hasDuplicate = found_duplicate(arr, SIZE);
-    printf("Array has duplicates: %s\n", hasDuplicate ? "Yes" : "No");
+    // Use fseek to check file position and move the pointer
+    fseek(inputFile, 0, SEEK_SET);  // Move the file pointer to the beginning of the file
+    long startPos = ftell(inputFile);  // Store the starting position of the file pointer
 
+    // Process the file
+    while (fscanf(inputFile, "%s", buffer) != EOF) {
+        if (is_valid_float(buffer)) {
+            fprintf(outputFile, "%s\n", buffer); // Write valid float to output file
+        } else {
+            invalidCount++; // Increment invalid count
+        }
+    }
+
+    // Check for errors in input file
+    if (ferror(inputFile)) {
+        perror("Error reading from source file");
+        fclose(inputFile);
+        fclose(outputFile);
+        return EXIT_FAILURE;
+    }
+
+    // Use fseek to get the current position after reading
+    fseek(inputFile, 0, SEEK_END);  // Move the pointer to the end of the file
+    long endPos = ftell(inputFile);  // Get the current position at the end of the file
+    printf("File size: %ld bytes\n", endPos - startPos);
+
+    // Close files
+    fclose(inputFile);
+    fclose(outputFile);
+
+    // Display results
+    printf("Number of invalid values found: %d\n", invalidCount);
+    printf("Valid floats have been written to '%s'\n", outputFileName);
+
+    return EXIT_SUCCESS;
+}
+
+-- Question 2--
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define WIDTH 512
+#define HEIGHT 512
+
+// Function to read a PGM image in text format.
+int readPGMText(const char *filename, unsigned char *pixels, int width, int height) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Cannot open file %s\n", filename);
+        return -1;
+    }
+
+    char buffer[16];
+    fgets(buffer, sizeof(buffer), file);  // Read magic number (P2)
+
+    // Skip comments
+    do {
+        fgets(buffer, sizeof(buffer), file);
+    } while (buffer[0] == '#');
+
+    // Read width, height, and max gray value
+    int imgWidth, imgHeight, maxVal;
+    sscanf(buffer, "%d %d", &imgWidth, &imgHeight);
+    fscanf(file, "%d", &maxVal);
+
+    // Ensure dimensions match
+    if (imgWidth != width || imgHeight != height) {
+        printf("Error: Image dimensions do not match.\n");
+        fclose(file);
+        return -1;
+    }
+
+    // Read pixel values
+    for (int i = 0; i < width * height; i++) {
+        fscanf(file, "%hhu", &pixels[i]);
+    }
+
+    fclose(file);
     return 0;
 }
 
+// Function to write a PGM image in text format.
+int writePGMText(const char *filename, unsigned char *pixels, int width, int height) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Error: Cannot open file %s\n", filename);
+        return -1;
+    }
 
---Question 2-- 
+    fprintf(file, "P2\n");
+    fprintf(file, "# Created by Steganography Program\n");
+    fprintf(file, "%d %d\n", width, height);
+    fprintf(file, "255\n");
 
-#include <stdio.h>
+    for (int i = 0; i < width * height; i++) {
+        fprintf(file, "%d ", pixels[i]);
+    }
 
-#define STARTING_BALANCE 1000
-#define MAX_OPS 10
+    fclose(file);
+    return 0;
+}
+
+// Function to write a PGM image in binary format.
+int writePGMBinary(const char *filename, unsigned char *pixels, int width, int height) {
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
+        printf("Error: Cannot open file %s\n", filename);
+        return -1;
+    }
+
+    fprintf(file, "P5\n");
+    fprintf(file, "# Created by Steganography Program\n");
+    fprintf(file, "%d %d\n", width, height);
+    fprintf(file, "255\n");
+
+    fwrite(pixels, sizeof(unsigned char), width * height, file);
+
+    fclose(file);
+    return 0;
+}
+
+// Function to hide a secret image using the 4-bit LSB steganography algorithm.
+void embedLSB(unsigned char *coverPixels, unsigned char *secretPixels, int width, int height) {
+    for (int i = 0; i < width * height; i++) {
+        unsigned char coverMSB = coverPixels[i] & 0xF0;  // Upper 4 bits of cover image
+        unsigned char secretMSB = (secretPixels[i] & 0xF0) >> 4;  // Upper 4 bits of secret image
+
+        coverPixels[i] = coverMSB | secretMSB;  // Combine cover and secret image bits
+    }
+}
+
+// Function to extract the secret image using 4-bit LSB steganography algorithm.
+void extractLSB(unsigned char *coverPixels, unsigned char *outputPixels, int width, int height) {
+    for (int i = 0; i < width * height; i++) {
+        unsigned char coverMSB = coverPixels[i] & 0xF0;  // Upper 4 bits of cover image
+        unsigned char secretMSB = (coverPixels[i] & 0x0F) << 4;  // Lower 4 bits from stego image
+
+        coverPixels[i] = coverMSB;       // Reconstructed Cover Image
+        outputPixels[i] = secretMSB;     // Extracted Secret Image
+    }
+}
 
 int main() {
-    int current_balance = STARTING_BALANCE;
-    int operations[MAX_OPS] = {200, -150, -500, -400, -50, -200, 300};
-    int pending_ops[MAX_OPS];
-    int pending_count = 0;
+    // Relative file paths since the code, cover image, and secret image are in the same folder
+    char cover_image[] = "baboon.pgm";
+    char secret_image[] = "farm.pgm";
+    char stego_image[] = "stego_image_bin.pgm";
+    char extracted_secret[] = "extracted_secret.pgm";
 
-    printf("Initial balance: %d AED\n", current_balance);
+    unsigned char *coverPixels, *secretPixels, *outputPixels;
+    int coverWidth = WIDTH, coverHeight = HEIGHT, secretWidth = WIDTH, secretHeight = HEIGHT;
 
-    // Process each transaction
-    for (int index = 0; index < MAX_OPS; index++) {
-        if (operations[index] == 0) {
-            break; 
-        }
+    // Allocate memory for cover, secret, and output image pixels
+    coverPixels = (unsigned char *)malloc(WIDTH * HEIGHT * sizeof(unsigned char));
+    secretPixels = (unsigned char *)malloc(WIDTH * HEIGHT * sizeof(unsigned char));
+    outputPixels = (unsigned char *)malloc(WIDTH * HEIGHT * sizeof(unsigned char));
 
-        int op = operations[index];
-
-        
-        if (op < 0 && current_balance + op < 0) {
-            printf("Withdrawal of %d AED skipped: Insufficient funds.\n", -op);
-            pending_ops[pending_count++] = op;
-        } else {
-            
-            current_balance += op;
-            printf("Transaction processed: %d AED, New balance: %d AED\n", op, current_balance);
-
-            if (current_balance == 0) {
-                printf("Balance is now zero. Halting further transactions.\n");
-
-                // Mark remaining transactions as pending
-                for (int remaining = index + 1; remaining < MAX_OPS; remaining++) {
-                    if (operations[remaining] == 0) {
-                        break;
-                    }
-                    pending_ops[pending_count++] = operations[remaining];
-                }
-                break;
-            }
-        }
+    if (!coverPixels || !secretPixels || !outputPixels) {
+        printf("Error: Memory allocation failed.\n");
+        return -1;
     }
 
-    // Final summary
-    printf("\nFinal balance: %d AED\n", current_balance);
-    printf("Pending transactions to process later:\n");
-    for (int i = 0; i < pending_count; i++) {
-        printf("%d ", pending_ops[i]);
+    // Read the cover and secret image files
+    if (readPGMText(cover_image, coverPixels, coverWidth, coverHeight) == -1) {
+        printf("Error: Cannot read cover image file.\n");
+        return -1;
     }
-    printf("\n");
 
+    if (readPGMText(secret_image, secretPixels, secretWidth, secretHeight) == -1) {
+        printf("Error: Cannot read secret image file.\n");
+        return -1;
+    }
+
+    // Check if the dimensions of both images match
+    if (coverWidth != secretWidth || coverHeight != secretHeight) {
+        printf("Error: Image dimensions do not match.\n");
+        return -1;
+    }
+
+    // Embed the secret image into the cover image
+    embedLSB(coverPixels, secretPixels, coverWidth, coverHeight);
+
+    // Save the stego image in binary format
+    if (writePGMBinary(stego_image, coverPixels, coverWidth, coverHeight) == -1) {
+        printf("Error: Cannot write stego image.\n");
+        return -1;
+    }
+
+    // Extract the secret image from the stego image
+    extractLSB(coverPixels, outputPixels, coverWidth, coverHeight);
+
+    // Save the extracted secret image in text format
+    if (writePGMText(extracted_secret, outputPixels, coverWidth, coverHeight) == -1) {
+        printf("Error: Cannot write extracted secret image.\n");
+        return -1;
+    }
+
+    // Free allocated memory
+    free(coverPixels);
+    free(secretPixels);
+    free(outputPixels);
+
+    printf("Steganography completed successfully.\n");
     return 0;
 }
 
 --Question 3--
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
+#include <iostream>
+#include <iomanip>
+#include <cstdlib> 
+using namespace std;
 
-#define MAX_TEAMS 20
-#define MAX_PLAYERS 53
+// Function to print real numbers in fixed-point notation
+void print_real(float number, int fieldspace, int precision);
 
-typedef struct {
-    int day;
-    int month;
-    int year;
-} BirthDate;
+// Template function to update the scale of two variables
+template <typename T>
+void update_scale(T& m1, T& m2, T m3 = 10) {
+    // Update m1 with the sum of m1 and m2, then multiply by m3
+    m1 = (m1 + m2) * m3;
 
-typedef struct {
-    char name[26];
-    int kitNumber;
-    char club[30];
-    BirthDate birthDate;
-    char position[20];
-} FootballPlayer;
-
-typedef struct {
-    char teamName[21];
-    FootballPlayer squad[MAX_PLAYERS];
-    int currentSize;
-} FootballTeam;
-
-FootballTeam league[MAX_TEAMS];
-int totalTeams = 0;
-
-void show_menu() {
-    printf("\nMenu:\n");
-    printf("1. Register Club\n");
-    printf("2. Add New Player\n");
-    printf("3. Find and Modify Player\n");
-    printf("4. View Club Statistics\n");
-    printf("0. Exit\n");
+    // Update m2 with the difference of m1 and m2, then multiply by m3
+    m2 = (m1 - m2) * m3;
 }
 
-void register_club() {
-    if (totalTeams >= MAX_TEAMS) {
-        printf("Cannot enroll more teams, limit reached.\n");
-        return;
-    }
-    printf("Enter club name: ");
-    scanf(" %[^\n]", league[totalTeams].teamName);
-    league[totalTeams].currentSize = 0;
-    totalTeams++;
-    printf("Club registered successfully.\n");
-}
+int main(void) {
+    float a, b;
+    cout << "Please input two real numbers: ";
+    cin >> a >> b;
 
-bool check_duplicate(FootballPlayer players[], int count, char name[], int kitNumber) {
-    for (int i = 0; i < count; i++) {
-        if (strcmp(players[i].name, name) == 0 || players[i].kitNumber == kitNumber) {
-            return true;
-        }
-    }
-    return false;
-}
+    // Print the values of a and b with 3 decimal places
+    print_real(a, 7, 3);
+    print_real(b, 7, 3);
 
-void add_new_player() {
-    if (totalTeams == 0) {
-        printf("No clubs available. Please register a club first.\n");
-        return;
-    }
+    // Call the function update_scale with the actual parameters a and b
+    update_scale(a, b);
 
-    printf("Select a club:\n");
-    for (int i = 0; i < totalTeams; i++) {
-        printf("%d. %s\n", i + 1, league[i].teamName);
-    }
-
-    int clubIndex;
-    scanf("%d", &clubIndex);
-    clubIndex--;
-
-    if (clubIndex < 0 || clubIndex >= totalTeams || league[clubIndex].currentSize >= MAX_PLAYERS) {
-        printf("Invalid club or squad full.\n");
-        return;
-    }
-
-    FootballPlayer newPlayer;
-    printf("Enter player's name: ");
-    scanf(" %[^\n]", newPlayer.name);
-    printf("Enter unique kit number (1-99): ");
-    scanf("%d", &newPlayer.kitNumber);
-    printf("Enter birth date (day month year): ");
-    scanf("%d %d %d", &newPlayer.birthDate.day, &newPlayer.birthDate.month, &newPlayer.birthDate.year);
-    printf("Enter position: ");
-    scanf(" %[^\n]", newPlayer.position);
-    strcpy(newPlayer.club, league[clubIndex].teamName);
-
-    if (check_duplicate(league[clubIndex].squad, league[clubIndex].currentSize, newPlayer.name, newPlayer.kitNumber)) {
-        printf("Duplicate player or kit number. Cannot add player.\n");
-    } else {
-        league[clubIndex].squad[league[clubIndex].currentSize] = newPlayer;
-        league[clubIndex].currentSize++;
-        printf("Player added successfully.\n");
-    }
-}
-
-void find_and_modify_player() {
-    char playerName[26];
-    int playerKitNumber, choice;
-    printf("Search by 1. Name or 2. Kit Number? ");
-    scanf("%d", &choice);
-
-    if (choice == 1) {
-        printf("Enter player's name: ");
-        scanf(" %[^\n]", playerName);
-    } else if (choice == 2) {
-        printf("Enter kit number: ");
-        scanf("%d", &playerKitNumber);
-    } else {
-        printf("Invalid option.\n");
-        return;
-    }
-
-    bool found = false;
-    for (int i = 0; i < totalTeams; i++) {
-        for (int j = 0; j < league[i].currentSize; j++) {
-            if ((choice == 1 && strcasecmp(league[i].squad[j].name, playerName) == 0) ||
-                (choice == 2 && league[i].squad[j].kitNumber == playerKitNumber)) {
-                printf("Player found:\n");
-                printf("  Name: %s\n  Kit Number: %d\n  Club: %s\n  Birth Date: %02d-%02d-%04d\n  Position: %s\n",
-                       league[i].squad[j].name, league[i].squad[j].kitNumber, league[i].squad[j].club,
-                       league[i].squad[j].birthDate.day, league[i].squad[j].birthDate.month, league[i].squad[j].birthDate.year,
-                       league[i].squad[j].position);
-
-                printf("Modify player details (leave blank to keep current value):\n");
-
-                printf("New name [%s]: ", league[i].squad[j].name);
-                char newName[26];
-                scanf(" %[^\n]", newName);
-                if (strlen(newName) > 0) {
-                    strcpy(league[i].squad[j].name, newName);
-                }
-
-                printf("New kit number [%d]: ", league[i].squad[j].kitNumber);
-                int newKitNumber;
-                if (scanf("%d", &newKitNumber) == 1) {
-                    league[i].squad[j].kitNumber = newKitNumber;
-                }
-
-                printf("New birth date (day month year) [%02d-%02d-%04d]: ", league[i].squad[j].birthDate.day, league[i].squad[j].birthDate.month, league[i].squad[j].birthDate.year);
-                int newDay, newMonth, newYear;
-                if (scanf("%d %d %d", &newDay, &newMonth, &newYear) == 3) {
-                    league[i].squad[j].birthDate.day = newDay;
-                    league[i].squad[j].birthDate.month = newMonth;
-                    league[i].squad[j].birthDate.year = newYear;
-                }
-
-                printf("New position [%s]: ", league[i].squad[j].position);
-                char newPosition[20];
-                scanf(" %[^\n]", newPosition);
-                if (strlen(newPosition) > 0) {
-                    strcpy(league[i].squad[j].position, newPosition);
-                }
-
-                printf("Player details updated successfully.\n");
-                found = true;
-                break;
-            }
-        }
-        if (found) break;
-    }
-
-    if (!found) {
-        printf("Player not found.\n");
-    }
-}
-
-void view_club_statistics() {
-    for (int i = 0; i < totalTeams; i++) {
-        printf("Club: %s, Players: %d\n", league[i].teamName, league[i].currentSize);
-        int totalAge = 0;
-        for (int j = 0; j < league[i].currentSize; j++) {
-            int age = 2024 - league[i].squad[j].birthDate.year;
-            totalAge += age;
-            printf("  Name: %s, Kit: %d, Position: %s, Age: %d\n", league[i].squad[j].name, league[i].squad[j].kitNumber, league[i].squad[j].position, age);
-        }
-        printf("Average Age: %.2f\n", league[i].currentSize ? (float)totalAge / league[i].currentSize : 0.0);
-    }
-}
-
-int main() {
-    int choice;
-    do {
-        show_menu();
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
-
-        switch (choice) {
-            case 1:
-                register_club();
-                break;
-            case 2:
-                add_new_player();
-                break;
-            case 3:
-                find_and_modify_player();
-                break;
-            case 4:
-                view_club_statistics();
-                break;
-            case 0:
-                printf("Exiting program.\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
-        }
-    } while (choice != 0);
+    // Print the updated values of a and b
+    print_real(a, 7, 3);
+    print_real(b, 7, 3);
 
     return 0;
+}
+
+// Function to print real numbers in fixed-point notation with specified field width and precision
+void print_real(float number, int fieldspace, int precision) {
+    cout << fixed << setw(fieldspace) << setprecision(precision) << number << endl;
 }
